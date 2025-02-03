@@ -1,65 +1,55 @@
-//This code configures an ADC on GPIO36 and a PWM output on GPIO18 for the ESP32. 
-// The ADC value is read and converted to a PWM duty cycle which is then applied to the PWM output.
+#include <Arduino.h>
+#include <driver/adc.h>
+#include <driver/ledc.h>
 
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "driver/adc.h"
-#include "driver/ledc.h"
-
-// ADC Configuration
-#define ADC_CHANNEL ADC1_CHANNEL_3 // GPIO39
-
-// PWM Configuration
-#define PWM_OUTPUT_PIN GPIO_NUM_23
-#define PWM_FREQ 5000
-#define PWM_RESOLUTION LEDC_TIMER_13_BIT
-#define PWM_CHANNEL LEDC_CHANNEL_0
+#define ADC_PIN 39
+#define PWM_PIN 23
 
 void setup() {
-    // Configure ADC
-    adc1_config_width(ADC_WIDTH_BIT_12);
-    adc1_config_channel_atten(ADC_CHANNEL, ADC_ATTEN_DB_11);
+  Serial.begin(115200);
 
-    // Configure PWM
-    ledc_timer_config_t ledc_timer = {
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .duty_resolution = PWM_RESOLUTION,
-        .timer_num = LEDC_TIMER_0,
-        .freq_hz = PWM_FREQ,
-    };
-    ledc_timer_config(&ledc_timer);
+  // Configure ADC1 Channel 3 (GPIO 39)
+  adc1_config_width(ADC_WIDTH_BIT_12); // Set ADC resolution to 12 bits (0-4095)
+  adc1_config_channel_atten(ADC1_CHANNEL_3, ADC_ATTEN_DB_11); // Set attenuation to 11dB for full range (0-3.6V)
 
-    ledc_channel_config_t ledc_channel = {
-        .gpio_num   = PWM_OUTPUT_PIN,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .channel    = PWM_CHANNEL,
-        .timer_sel  = LEDC_TIMER_0,
-        .duty       = 0,
-        .hpoint     = 0,
-    };
-    ledc_channel_config(&ledc_channel);
+  // Configure PWM on GPIO 23 using the new V3 API
+  ledc_timer_config_t ledc_timer = {
+    .speed_mode       = LEDC_HIGH_SPEED_MODE,
+    .duty_resolution  = LEDC_TIMER_8_BIT,
+    .timer_num        = LEDC_TIMER_0,
+    .freq_hz          = 5000,  // PWM frequency
+    .clk_cfg          = LEDC_AUTO_CLK
+  };
+  ledc_timer_config(&ledc_timer);
+
+  ledc_channel_config_t ledc_channel = {
+    .gpio_num       = PWM_PIN,
+    .speed_mode     = LEDC_HIGH_SPEED_MODE,
+    .channel        = LEDC_CHANNEL_0,
+    .intr_type      = LEDC_INTR_DISABLE,
+    .timer_sel      = LEDC_TIMER_0,
+    .duty           = 0, // Set initial duty cycle to 0
+    .hpoint         = 0
+  };
+  ledc_channel_config(&ledc_channel);
+
+  Serial.println("Setup completed.");
 }
 
 void loop() {
-    // Read ADC value
-    int adc_value = adc1_get_raw(ADC_CHANNEL);
+  // Read ADC value from GPIO 39
+  int adcValue = adc1_get_raw(ADC1_CHANNEL_3);
+  Serial.print("ADC Value: ");
+  Serial.println(adcValue);
 
-    // Convert ADC value to PWM duty cycle
-    int pwm_duty = (adc_value * ((1 << PWM_RESOLUTION) - 1)) / 4095;
-    ledc_set_duty(LEDC_HIGH_SPEED_MODE, PWM_CHANNEL, pwm_duty);
-    ledc_update_duty(LEDC_HIGH_SPEED_MODE, PWM_CHANNEL);
+  // Map the ADC value to PWM range (0-255)
+  int pwmValue = map(adcValue, 0, 4095, 0, 255);
+  Serial.print("PWM Value: ");
+  Serial.println(pwmValue);
 
-    // Print ADC and PWM values
-    printf("ADC Value: %d, PWM Duty: %d\n", adc_value, pwm_duty);
-}
+  // Set the PWM value on GPIO 23 using the new V3 API
+  ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, pwmValue);
+  ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
 
-int main(void)
-{
-  setup();
-  while (1) {
-    loop();
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
+  delay(100);
 }
