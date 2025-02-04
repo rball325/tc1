@@ -88,9 +88,18 @@ void setup() {
   }
 
   Serial.println("ADC and PWM initialized.");
+
+  switch_setup(0, 13);
+  switch_setup(1, 26);
+  switch_setup(2, 27);
 }
 
-void loop() {
+void loop() 
+{
+  for (int i = 0; i < 3; ++i) {
+    switch_update(i);
+  }
+
   // Perform one-shot ADC reads for each channel
   int adc_values[numAdcPins];
   for (int i = 0; i < numAdcPins; i++) {
@@ -121,4 +130,5 @@ void loop() {
   }
   delay(10); // ms
 #endif
+
 }
