@@ -1,0 +1,30 @@
+Generate Arduino ESP32 sketch to do the following:
+
+General rules:
+1. Do not use function ledcSetup() as it is deprecated in the latest ESP32 library.
+
+Connections:
+1. Switches 1a, 1b, and 3 are on GPIO 26, 27, and 13, respectively. A switch is 'pressed' when the corresponding GPIO transitions from HIGH to LOW.
+2. MOSFET7 is connected to GPIO 2 (configed as PWM).
+3. The 'track loop' controls 1-6 are on (in order) GPIO 23, 19, 18, 17, 16, and 4, which are all set to PWM.
+4. The 'pots' that control speed are on (in order) GPIO 39, 34, 35, 32, 33, and 25, which are configed as analog inputs using ADC (one-shot mode).
+5. 'Trains' run on 'track loops'.
+
+Constants:
+1. RUN_TIME_LONG, default 30 seconds, and RUN_TIME_SHORT, default 10 secons, control how long the TRE lasts.
+2. ACCELERATION_TIME, default 5 seconds, controls how long is takes to change PWM values.
+3. PWM_FREQ, default 15KHz, used during PWM configuration.
+
+Behavior:
+1. Train Run Event (TRE) begins when SW3 is pressed. All but 1 of the six track loops will be powered during a TRE. In each subsequent TRE, the loop that is idle increments.
+2. When TRE is triggered, the 5 active tracks have the PWN duty cycle increased simultaneously from 0 to a value determined by the Pot for each loop when in speed setting mode. The time for the increase in duty cycle should be ACCELERATION_TIME.
+3. At end of TRE, trains should take ACCELERATION_TIME to stop.
+4. During TRE, length of time trains run is determined from whether SW1a or SW1b goes LOW. SW1a runs the loops for the number of seconds specified by constant RUN_TIME_SHORT, while SW1b runs the loops based on RUN_TIME_LONG. Note that both constants do not include the amount of time required to accelerate/deaccelerate the loops.
+5. Also, during entire time of each TRE, set the duty cycle of MOSFET7 to 100%
+6. Setting maximum speeds for track loops:
+a. When SW1a and SW1b are both HIGH, ignore input from SW3 and enter 'speed setting mode'. 
+b. Check if trains are running and it so, deaccelerate them simultaneously to a stop.
+c. Once trains are all stopped, accelerate all 6 track loops to value indicated by corresponding pot and keep them running until SW1a or SW1b goes LOW.
+d. During this time, read inputs from Pot1 – Pot6 and change duty cycles in real time, allowing operator to set the maximum speed for each train loop.
+e. Once SW1a or SW1b goes low, save the current train speeds on all loops and deaccelerate trains simultaneously to a stop using ACCELERATION_TIME, and then resume
+responding to SW3.
