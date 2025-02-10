@@ -286,19 +286,14 @@ void handleTRE() {
 void handleMaxSpeedSetting() {
   Serial.println("Entering speed setting mode...");
 
-  int activeTracks[5];
-  int targetDuties[5];
-  int index = 0;
+  int targetDuties[6];
+  int tracks[6] = {0, 1, 2, 3, 4, 5};
 
   for (int i = 0; i < 6; i++) {
-    if (i != idleTrack) {
-      activeTracks[index] = i;
-      targetDuties[index] = savedSpeeds[i];
-      index++;
-    }
+    targetDuties[i] = readPot(i);
   }
 
-  accelerateToSpeed(activeTracks, targetDuties, 5, ACCELERATION_TIME);
+  accelerateToSpeed(tracks, targetDuties, 6, ACCELERATION_TIME);
 
   while (digitalRead(sw1aPin) == HIGH && digitalRead(sw1bPin) == HIGH) {
     for (int i = 0; i < 6; i++) {
@@ -314,7 +309,6 @@ void handleMaxSpeedSetting() {
 
   saveMaxSpeeds();
 
-  int tracks[6] = {0, 1, 2, 3, 4, 5};
   decelerateToStop(tracks, 6, ACCELERATION_TIME);
 
   settingMaxSpeeds = false;
