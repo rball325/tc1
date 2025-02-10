@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <EEPROM.h>
 #include "driver/ledc.h"
 #include "esp_adc/adc_oneshot.h"
 
@@ -7,6 +8,7 @@ const int RUN_TIME_SHORT = 10;  // Define the short run time in seconds
 const int RUN_TIME_LONG = 30;   // Define the long run time in seconds
 const int ACCELERATION_TIME = 5000; // Time to accelerate/decelerate in milliseconds
 const int PWM_FREQ = 15000;     // PWM frequency in Hz
+const int EEPROM_SIZE = 64;     // EEPROM size in bytes
 
 // GPIO Pins
 const int sw1aPin = 27;
@@ -40,6 +42,8 @@ int savedSpeeds[6] = {0, 0, 0, 0, 0, 0}; // Array to save the speeds
 // Function Prototypes
 void initializePWM();
 void initializeADC();
+void loadMaxSpeeds();
+void saveMaxSpeeds();
 int readPot(int adc_channel);
 void setPWMDuty(int channel, int duty);
 void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int duration);
@@ -58,16 +62,24 @@ void setup() {
   initializePWM();
   initializeADC();
 
+  EEPROM.begin(EEPROM_SIZE);
+  loadMaxSpeeds();
+
   Serial.println("Setup complete.");
 }
 
 void loop() {
   if (digitalRead(sw1aPin) == HIGH && digitalRead(sw1bPin) == HIGH) {
-    if (trainRunning) {
-      stopAllTrains();
+    if (digitalRead(sw3Pin) == LOW) {
+      delay(50); // Debounce
+      if (digitalRead(sw3Pin) == LOW) {
+        if (trainRunning) {
+          stopAllTrains();
+        }
+        settingMaxSpeeds = true;
+        handleMaxSpeedSetting();
+      }
     }
-    settingMaxSpeeds = true;
-    handleMaxSpeedSetting();
   } else if (digitalRead(sw3Pin) == LOW) {
     delay(50); // Debounce
     if (digitalRead(sw3Pin) == LOW) {
@@ -146,6 +158,21 @@ void initializeADC() {
   Serial.println("ADC initialized.");
 }
 
+void loadMaxSpeeds() {
+  for (int i = 0; i < 6; i++) {
+    savedSpeeds[i] = EEPROM.read(i);
+  }
+  Serial.println("Max speeds loaded from EEPROM.");
+}
+
+void saveMaxSpeeds() {
+  for (int i = 0; i < 6; i++) {
+    EEPROM.write(i, savedSpeeds[i]);
+  }
+  EEPROM.commit();
+  Serial.println("Max speeds saved to EEPROM.");
+}
+
 int readPot(int adc_channel) {
   int adcValue;
   if (adc_channel < 5) {
@@ -163,6 +190,7 @@ void setPWMDuty(int channel, int duty) {
 }
 
 void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int duration) {
+  Serial.println("Starting acceleration...");
   int steps = 100;
   float stepDelay = (float)duration / steps;
   float increments[numTracks];
@@ -182,6 +210,7 @@ void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int dura
 }
 
 void decelerateToStop(int tracks[], int numTracks, int duration) {
+  Serial.println("Starting deceleration...");
   int steps = 100;
   float stepDelay = (float)duration / steps;
   float decrements[numTracks];
@@ -218,6 +247,9 @@ void handleTRE() {
 
   Serial.print("Starting TRE with target duties: ");
   for (int i = 0; i < 5; i++) {
+    Serial.print("Channel ");
+    Serial.print(activeTracks[i]);
+    Serial.print(": ");
     Serial.print(targetDuties[i]);
     if (i < 4) {
       Serial.print(", ");
@@ -253,6 +285,21 @@ void handleTRE() {
 
 void handleMaxSpeedSetting() {
   Serial.println("Entering speed setting mode...");
+
+  int activeTracks[5];
+  int targetDuties[5];
+  int index = 0;
+
+  for (int i = 0; i < 6; i++) {
+    if (i != idleTrack) {
+      activeTracks[index] = i;
+      targetDuties[index] = savedSpeeds[i];
+      index++;
+    }
+  }
+
+  accelerateToSpeed(activeTracks, targetDuties, 5, ACCELERATION_TIME);
+
   while (digitalRead(sw1aPin) == HIGH && digitalRead(sw1bPin) == HIGH) {
     for (int i = 0; i < 6; i++) {
       int targetDuty = readPot(i);
@@ -264,6 +311,8 @@ void handleMaxSpeedSetting() {
   for (int i = 0; i < 6; i++) {
     savedSpeeds[i] = ledc_get_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)pwmChannels[i]);
   }
+
+  saveMaxSpeeds();
 
   int tracks[6] = {0, 1, 2, 3, 4, 5};
   decelerateToStop(tracks, 6, ACCELERATION_TIME);
