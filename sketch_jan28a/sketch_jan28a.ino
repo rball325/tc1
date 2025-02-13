@@ -11,9 +11,9 @@ const int PWM_FREQ = 15000;     // PWM frequency in Hz
 const int EEPROM_SIZE = 64;     // EEPROM size in bytes
 
 // GPIO Pins
-const int sw1aPin = 27;
-const int sw1bPin = 26;
-const int sw3Pin = 13;
+const int swLongPin = 26;
+const int swShortPin = 27;
+const int swStartPin = 13;
 const int mosfet7Pin = 2;
 const int pwmPins[] = {23, 19, 18, 17, 16, 4};
 const int potPins[] = {39, 34, 35, 32, 33, 25};
@@ -55,9 +55,9 @@ void stopAllTrains();
 void setup() {
   Serial.begin(115200);
 
-  pinMode(sw1aPin, INPUT_PULLUP);
-  pinMode(sw1bPin, INPUT_PULLUP);
-  pinMode(sw3Pin, INPUT_PULLUP);
+  pinMode(swLongPin, INPUT_PULLUP);
+  pinMode(swShortPin, INPUT_PULLUP);
+  pinMode(swStartPin, INPUT_PULLUP);
 
   initializePWM();
   initializeADC();
@@ -69,10 +69,10 @@ void setup() {
 }
 
 void loop() {
-  if (digitalRead(sw1aPin) == HIGH && digitalRead(sw1bPin) == HIGH) {
-    if (digitalRead(sw3Pin) == LOW) {
+  if (digitalRead(swLongPin) == HIGH && digitalRead(swShortPin) == HIGH) {
+    if (digitalRead(swStartPin) == LOW) {
       delay(50); // Debounce
-      if (digitalRead(sw3Pin) == LOW) {
+      if (digitalRead(swStartPin) == LOW) {
         if (trainRunning) {
           stopAllTrains();
         }
@@ -80,9 +80,9 @@ void loop() {
         handleMaxSpeedSetting();
       }
     }
-  } else if (digitalRead(sw3Pin) == LOW) {
+  } else if (digitalRead(swStartPin) == LOW) {
     delay(50); // Debounce
-    if (digitalRead(sw3Pin) == LOW) {
+    if (digitalRead(swStartPin) == LOW) {
       handleTRE();
     }
   }
@@ -261,9 +261,9 @@ void handleTRE() {
 
   idleTrack = (idleTrack + 1) % 6;
 
-  if (digitalRead(sw1aPin) == LOW) {
+  if (digitalRead(swLongPin) == LOW) {
     duration = RUN_TIME_SHORT * 1000;
-  } else if (digitalRead(sw1bPin) == LOW) {
+  } else if (digitalRead(swShortPin) == LOW) {
     duration = RUN_TIME_LONG * 1000;
   } else {
     return;
@@ -295,7 +295,7 @@ void handleMaxSpeedSetting() {
 
   accelerateToSpeed(tracks, targetDuties, 6, ACCELERATION_TIME);
 
-  while (digitalRead(sw1aPin) == HIGH && digitalRead(sw1bPin) == HIGH) {
+  while (digitalRead(swLongPin) == HIGH && digitalRead(swShortPin) == HIGH) {
     for (int i = 0; i < 6; i++) {
       int targetDuty = readPot(i);
       setPWMDuty(i, targetDuty);
