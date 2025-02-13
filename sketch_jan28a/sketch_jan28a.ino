@@ -191,19 +191,23 @@ void setPWMDuty(int channel, int duty) {
 
 void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int duration) {
   Serial.println("Starting acceleration...");
-  int steps = 100;
-  float stepDelay = (float)duration / steps;
+  unsigned long startTime = millis();
+  unsigned long endTime = startTime + duration;
+  float currentDuties[numTracks];
   float increments[numTracks];
 
   for (int i = 0; i < numTracks; i++) {
-    increments[i] = (float)targetDuties[i] / steps;
+    currentDuties[i] = (float)ledc_get_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)pwmChannels[tracks[i]]);
+    increments[i] = ((float)targetDuties[i] - currentDuties[i]) / duration;
   }
 
-  for (int step = 0; step <= steps; step++) {
+  while (millis() < endTime) {
+    unsigned long currentTime = millis();
     for (int i = 0; i < numTracks; i++) {
-      setPWMDuty(tracks[i], (int)(step * increments[i]));
+      float newDuty = currentDuties[i] + increments[i] * (currentTime - startTime);
+      setPWMDuty(tracks[i], (int)newDuty);
     }
-    delay((int)stepDelay);
+    delay(10); // Adjust this delay to control update rate
   }
 
   Serial.println("Acceleration complete.");
@@ -211,21 +215,23 @@ void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int dura
 
 void decelerateToStop(int tracks[], int numTracks, int duration) {
   Serial.println("Starting deceleration...");
-  int steps = 100;
-  float stepDelay = (float)duration / steps;
-  float decrements[numTracks];
+  unsigned long startTime = millis();
+  unsigned long endTime = startTime + duration;
   float currentDuties[numTracks];
+  float decrements[numTracks];
 
   for (int i = 0; i < numTracks; i++) {
     currentDuties[i] = (float)ledc_get_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)pwmChannels[tracks[i]]);
-    decrements[i] = currentDuties[i] / steps;
+    decrements[i] = currentDuties[i] / duration;
   }
 
-  for (int step = steps; step >= 0; step--) {
+  while (millis() < endTime) {
+    unsigned long currentTime = millis();
     for (int i = 0; i < numTracks; i++) {
-      setPWMDuty(tracks[i], (int)(step * decrements[i]));
+      float newDuty = currentDuties[i] - decrements[i] * (currentTime - startTime);
+      setPWMDuty(tracks[i], (int)newDuty);
     }
-    delay((int)stepDelay);
+    delay(10); // Adjust this delay to control update rate
   }
 
   Serial.println("Deceleration complete.");
