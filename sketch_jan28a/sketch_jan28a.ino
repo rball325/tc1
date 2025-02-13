@@ -11,9 +11,9 @@ const int PWM_FREQ = 15000;     // PWM frequency in Hz
 const int EEPROM_SIZE = 64;     // EEPROM size in bytes
 
 // GPIO Pins
-const int swLongPin = 26;
-const int swShortPin = 27;
-const int swStartPin = 13;
+const int swLongPin = 26;       // Renamed pin assignment for swLong
+const int swShortPin = 27;      // Renamed pin assignment for swShort
+const int swStartPin = 13;      // Renamed pin assignment for swStart
 const int mosfet7Pin = 2;
 const int pwmPins[] = {23, 19, 18, 17, 16, 4};
 const int potPins[] = {39, 34, 35, 32, 33, 25};
