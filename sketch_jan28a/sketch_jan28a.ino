@@ -203,10 +203,19 @@ void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int dura
 
   while (millis() < endTime) {
     unsigned long currentTime = millis();
+    Serial.print("Current PWM values: ");
     for (int i = 0; i < numTracks; i++) {
       float newDuty = currentDuties[i] + increments[i] * (currentTime - startTime);
       setPWMDuty(tracks[i], (int)newDuty);
+      Serial.print("Track ");
+      Serial.print(tracks[i]);
+      Serial.print(": ");
+      Serial.print((int)newDuty);
+      if (i < numTracks - 1) {
+        Serial.print(", ");
+      }
     }
+    Serial.println();
     delay(10); // Adjust this delay to control update rate
   }
 
@@ -227,9 +236,20 @@ void decelerateToStop(int tracks[], int numTracks, int duration) {
 
   while (millis() < endTime) {
     unsigned long currentTime = millis();
+    Serial.print("Current PWM values: ");
+
     for (int i = 0; i < numTracks; i++) {
       float newDuty = currentDuties[i] - decrements[i] * (currentTime - startTime);
       setPWMDuty(tracks[i], (int)newDuty);
+      Serial.print("Track ");
+      Serial.print(tracks[i]);
+      Serial.print(": ");
+      Serial.print((int)newDuty);
+      if (i < numTracks - 1) {
+        Serial.print(", ");
+      }
+    }
+    Serial.println();
     }
     delay(10); // Adjust this delay to control update rate
   }
