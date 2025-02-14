@@ -310,6 +310,10 @@ void handleTRE() {
 
   startTime = millis();
   while (millis() - startTime < duration) {
+    if (digitalRead(swLongPin) == HIGH && digitalRead(swShortPin) == HIGH) {
+      Serial.println("INTERRUPT!");
+      break;
+    }
     for (int i = 0; i < 5; i++) {
       setPWMDuty(activeTracks[i], targetDuties[i]);
     }
