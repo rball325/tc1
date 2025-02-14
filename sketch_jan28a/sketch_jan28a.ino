@@ -198,14 +198,19 @@ void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int dura
 
   for (int i = 0; i < numTracks; i++) {
     currentDuties[i] = (float)ledc_get_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)pwmChannels[tracks[i]]);
-    increments[i] = ((float)targetDuties[i] - currentDuties[i]) / duration;
+    increments[i] = 255.0 / duration;
   }
 
   while (millis() < endTime) {
+    int done = 0;
     unsigned long currentTime = millis();
     Serial.print("Current PWM values: ");
     for (int i = 0; i < numTracks; i++) {
       float newDuty = currentDuties[i] + increments[i] * (currentTime - startTime);
+      if (newDuty >= targetDuties[i]) {
+        newDuty = targetDuties[i];
+        ++done;
+      }
       setPWMDuty(tracks[i], (int)newDuty);
       Serial.print("Track ");
       Serial.print(tracks[i]);
@@ -216,6 +221,7 @@ void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int dura
       }
     }
     Serial.println();
+    if (done == numTracks) break;
     delay(10); // Adjust this delay to control update rate
   }
 
@@ -231,15 +237,20 @@ void decelerateToStop(int tracks[], int numTracks, int duration) {
 
   for (int i = 0; i < numTracks; i++) {
     currentDuties[i] = (float)ledc_get_duty(LEDC_HIGH_SPEED_MODE, (ledc_channel_t)pwmChannels[tracks[i]]);
-    decrements[i] = currentDuties[i] / duration;
+    decrements[i] = 255.0 / duration;
   }
 
   while (millis() < endTime) {
+    int done = 0;
     unsigned long currentTime = millis();
     Serial.print("Current PWM values: ");
 
     for (int i = 0; i < numTracks; i++) {
       float newDuty = currentDuties[i] - decrements[i] * (currentTime - startTime);
+      if (newDuty <= 0) {
+        newDuty = 0;
+        ++done;
+      }
       setPWMDuty(tracks[i], (int)newDuty);
       Serial.print("Track ");
       Serial.print(tracks[i]);
@@ -250,6 +261,8 @@ void decelerateToStop(int tracks[], int numTracks, int duration) {
       }
     }
     Serial.println();
+    if (done == numTracks) {
+      break;
     }
     delay(10); // Adjust this delay to control update rate
   }
