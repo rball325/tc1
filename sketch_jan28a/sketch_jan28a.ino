@@ -301,9 +301,9 @@ void handleTRE() {
   idleTrack = (idleTrack + 1) % 6;
 
   if (digitalRead(swLongPin) == LOW) {
-    duration = RUN_TIME_SHORT * 1000;
-  } else if (digitalRead(swShortPin) == LOW) {
     duration = RUN_TIME_LONG * 1000;
+  } else if (digitalRead(swShortPin) == LOW) {
+    duration = RUN_TIME_SHORT * 1000;
   } else {
     return;
   }
