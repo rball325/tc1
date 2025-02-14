@@ -317,8 +317,13 @@ void handleTRE() {
     for (int i = 0; i < 5; i++) {
       setPWMDuty(activeTracks[i], targetDuties[i]);
     }
+    unsigned long remainingTime = (duration - (millis() - startTime) - 1) / 1000 + 1;
+      Serial.print("\rTRE running, remaining time: ");
+      Serial.print(remainingTime);
+      Serial.print(" seconds   "); // Add some spaces to clear the previous message   delay(100);
     delay(100);
   }
+  Serial.println();
 
   decelerateToStop(activeTracks, 5, ACCELERATION_TIME);
 
