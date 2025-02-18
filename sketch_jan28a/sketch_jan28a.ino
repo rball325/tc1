@@ -2,6 +2,7 @@
 #include <EEPROM.h>
 #include "driver/ledc.h"
 #include "esp_adc/adc_oneshot.h"
+#include "utility.h"
 
 // Constants
 const int RUN_TIME_SHORT = 10;  // Define the short run time in seconds
@@ -54,6 +55,7 @@ void stopAllTrains();
 
 void setup() {
   Serial.begin(115200);
+  showResetReason();
 
   pinMode(swLongPin, INPUT_PULLUP);
   pinMode(swShortPin, INPUT_PULLUP);
