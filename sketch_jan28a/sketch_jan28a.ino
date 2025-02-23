@@ -4,6 +4,8 @@
 #include "esp_adc/adc_oneshot.h"
 #include "utility.h"
 
+const int verbose = 0;
+
 // Constants
 const int RUN_TIME_SHORT = 10;  // Define the short run time in seconds
 const int RUN_TIME_LONG = 30;   // Define the long run time in seconds
@@ -206,7 +208,7 @@ void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int dura
   while (millis() < endTime) {
     int done = 0;
     unsigned long currentTime = millis();
-    Serial.print("Current PWM values: ");
+    if (verbose) Serial.print("Current PWM values: ");
     for (int i = 0; i < numTracks; i++) {
       float newDuty = currentDuties[i] + increments[i] * (currentTime - startTime);
       if (newDuty >= targetDuties[i]) {
@@ -214,15 +216,17 @@ void accelerateToSpeed(int tracks[], int targetDuties[], int numTracks, int dura
         ++done;
       }
       setPWMDuty(tracks[i], (int)newDuty);
-      Serial.print("Track ");
-      Serial.print(tracks[i]);
-      Serial.print(": ");
-      Serial.print((int)newDuty);
-      if (i < numTracks - 1) {
-        Serial.print(", ");
+      if (verbose) {
+        Serial.print("Track ");
+        Serial.print(tracks[i]);
+        Serial.print(": ");
+        Serial.print((int)newDuty);
+        if (i < numTracks - 1) {
+          Serial.print(", ");
+        }
       }
     }
-    Serial.println();
+    if (verbose) Serial.println();
     if (done == numTracks) break;
     delay(10); // Adjust this delay to control update rate
   }
@@ -245,8 +249,7 @@ void decelerateToStop(int tracks[], int numTracks, int duration) {
   while (millis() < endTime) {
     int done = 0;
     unsigned long currentTime = millis();
-    Serial.print("Current PWM values: ");
-
+    if (verbose) Serial.print("Current PWM values: ");
     for (int i = 0; i < numTracks; i++) {
       float newDuty = currentDuties[i] - decrements[i] * (currentTime - startTime);
       if (newDuty <= 0) {
@@ -254,15 +257,17 @@ void decelerateToStop(int tracks[], int numTracks, int duration) {
         ++done;
       }
       setPWMDuty(tracks[i], (int)newDuty);
-      Serial.print("Track ");
-      Serial.print(tracks[i]);
-      Serial.print(": ");
-      Serial.print((int)newDuty);
-      if (i < numTracks - 1) {
-        Serial.print(", ");
+      if (verbose) {
+        Serial.print("Track ");
+        Serial.print(tracks[i]);
+        Serial.print(": ");
+        Serial.print((int)newDuty);
+        if (i < numTracks - 1) {
+          Serial.print(", ");
+        }
       }
     }
-    Serial.println();
+    if (verbose) Serial.println();
     if (done == numTracks) {
       break;
     }
@@ -349,7 +354,7 @@ void handleMaxSpeedSetting() {
     for (int i = 0; i < 6; i++) {
       int targetDuty = readPot(i);
       setPWMDuty(i, targetDuty);
-    }
+      }
     delay(100);
   }
 
