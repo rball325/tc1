@@ -4,6 +4,8 @@
 #include "esp_adc/adc_oneshot.h"
 #include "utility.h"
 
+#define DIRECT_UPDATE 0
+
 const int verbose = 0;
 
 // Constants
@@ -353,9 +355,26 @@ void handleMaxSpeedSetting() {
   while (digitalRead(swLongPin) == HIGH && digitalRead(swShortPin) == HIGH) {
     for (int i = 0; i < 6; i++) {
       int targetDuty = readPot(i);
+      #if DIRECT_UPDATE
       setPWMDuty(i, targetDuty);
+      #else
+      if (verbose && i == 0) {
+        Serial.print("(Track 0: ");
+        Serial.print(targetDuty);
+        Serial.print(": ");
+        Serial.println(targetDuties[i]);
       }
-    delay(100);
+      if (targetDuties[i] != targetDuty) {
+        if (targetDuties[i] < targetDuty) {
+          targetDuties[i]++;
+        } else {
+          targetDuties[i]--;
+        }
+        setPWMDuty(i, targetDuties[i]);
+      }
+      #endif
+    }
+    delay(ACCELERATION_TIME / 255.0);
   }
 
   for (int i = 0; i < 6; i++) {
