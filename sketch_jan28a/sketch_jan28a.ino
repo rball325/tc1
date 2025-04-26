@@ -26,6 +26,8 @@ const int potPins[] = {39, 34, 35, 32, 33, 25};
 // PWM Configuration
 const int pwmResolution = 8;   // Resolution of PWM (8-bit)
 const int pwmMaxValue = 255;   // Maximum duty cycle value (for 8-bit resolution)
+const int pwmFETvalue = 255;   // Duty cycle for MOSFET7 (8-bit resolution)
+const int MOSFET_index = 6;    // Index into pwmChannels for MOSFET control
 const int pwmChannels[] = {0, 1, 2, 3, 4, 5, 6}; // Including channel for MOSFET7
 
 // ADC Channels
@@ -123,10 +125,10 @@ void initializePWM() {
   ledc_channel_config_t ledc_channel = {
     .gpio_num       = mosfet7Pin,
     .speed_mode     = LEDC_HIGH_SPEED_MODE,
-    .channel        = (ledc_channel_t)pwmChannels[6],
+    .channel        = (ledc_channel_t)pwmChannels[MOSFET_index],
     .intr_type      = LEDC_INTR_DISABLE,
     .timer_sel      = LEDC_TIMER_0,
-    .duty           = pwmMaxValue, // Set to 100%
+    .duty           = 0, // start OFF (turns on with TRE)
     .hpoint         = 0,
   };
   ledc_channel_config(&ledc_channel);
@@ -305,6 +307,7 @@ void handleTRE() {
   }
   Serial.println();
 
+  setPWMDuty(MOSFET_index, pwmFETvalue);
   accelerateToSpeed(activeTracks, targetDuties, 5, ACCELERATION_TIME);
 
   idleTrack = (idleTrack + 1) % 6;
@@ -335,6 +338,7 @@ void handleTRE() {
   Serial.println();
 
   decelerateToStop(activeTracks, 5, ACCELERATION_TIME);
+  setPWMDuty(MOSFET_index, 0);
 
   trainRunning = false;
   Serial.println("TRE complete.");
